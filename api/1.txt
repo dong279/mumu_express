@@ -1,0 +1,337 @@
+API 명세서 - 동물 행동 분석 플랫폼 (mumu_express)
+================================================
+
+버전: v1  
+Base URL: `http://localhost:3000`
+
+공통 규칙
+--------
+- 모든 API 응답 형태:
+  - 성공: `{ "success": true, "data": ..., "message": ... }` 또는 `{ "success": true, ... }`
+  - 실패: `{ "success": false, "error": "에러 메시지" }`
+- 인증이 필요한 API는 HTTP 헤더에 JWT 토큰 포함:
+  - `Authorization: Bearer <JWT_TOKEN>`
+- Content-Type:
+  - JSON: `Content-Type: application/json`
+  - 파일 업로드: `Content-Type: multipart/form-data`
+
+1. 인증 / 사용자
+----------------
+
+1.1 회원가입
+------------
+- 메서드: `POST`
+- URL: `/api/users/register`
+- 인증: 불필요
+- Body (JSON):
+  - `id` (string, required): 로그인 ID (3~50자, 보통 이메일 사용)
+  - `password` (string, required): 비밀번호 (8자 이상)
+  - `name` (string, required): 이름
+  - `phone` (string, optional): 전화번호
+  - `address` (string, optional)
+  - `detail_address` (string, optional)
+  - `postal_code` (string, optional)
+  - `terms_agreed` (boolean, required): 서비스 이용약관 동의
+  - `privacy_agreed` (boolean, required): 개인정보처리방침 동의
+  - `marketing_agreed` (boolean, optional)
+
+예시 요청:
+```json
+{
+  "id": "test@example.com",
+  "password": "Passw0rd!",
+  "name": "홍길동",
+  "phone": "01012345678",
+  "terms_agreed": true,
+  "privacy_agreed": true
+}
+```
+
+예시 응답 (201):
+```json
+{
+  "success": true,
+  "message": "회원가입이 완료되었습니다.",
+  "token": "<JWT_TOKEN>",
+  "user": {
+    "userId": 1,
+    "id": "test@example.com",
+    "name": "홍길동",
+    "phone": "01012345678"
+  }
+}
+```
+
+1.2 로그인
+----------
+- 메서드: `POST`
+- URL: `/api/users/login`
+- 인증: 불필요
+- Body (JSON):
+  - `id` (string, required)
+  - `password` (string, required)
+
+예시 응답:
+```json
+{
+  "success": true,
+  "message": "로그인 성공",
+  "token": "<JWT_TOKEN>",
+  "user": {
+    "userId": 1,
+    "id": "test@example.com",
+    "name": "홍길동",
+    "phone": "01012345678",
+    "profileImage": null,
+    "role": "user"
+  }
+}
+```
+
+1.3 프로필 조회
+---------------
+- 메서드: `GET`
+- URL: `/api/users/profile`
+- 인증: 필요 (Bearer 토큰)
+
+예시 응답:
+```json
+{
+  "success": true,
+  "data": {
+    "user_id": 1,
+    "id": "test@example.com",
+    "name": "홍길동",
+    "phone": "01012345678",
+    "phone_verified": false,
+    "profile_image": null,
+    "address": null,
+    "detail_address": null,
+    "postal_code": null,
+    "role": "user",
+    "status": "active",
+    "follower_count": 0,
+    "following_count": 0,
+    "community_count": 0,
+    "created_at": "2026-02-05T00:00:00.000Z",
+    "last_login_at": "2026-02-05T00:00:00.000Z"
+  }
+}
+```
+
+1.4 프로필 수정
+---------------
+- 메서드: `PUT`
+- URL: `/api/users/profile`
+- 인증: 필요
+- Body (JSON, 일부 필드만 보내도 됨):
+  - `name`, `phone`, `address`, `detail_address`, `postal_code`, `profile_image`
+
+2. 반려동물 (Pets)
+------------------
+
+2.1 반려동물 등록
+-----------------
+- 메서드: `POST`
+- URL: `/api/pets`
+- 인증: 필요
+- Body:
+  - `name` (string, required)
+  - `species` (string, required): `dog` | `cat` | `other`
+  - `breed`, `gender`, `birth_date`, `weight`, `profile_image`,
+    `microchip_number`, `neutered`, `allergies`, `chronic_diseases`, `medications`
+
+2.2 내 반려동물 목록
+--------------------
+- 메서드: `GET`
+- URL: `/api/pets`
+- 인증: 필요
+
+2.3 반려동물 상세 / 수정 / 삭제
+-------------------------------
+- 상세: `GET /api/pets/:petId`
+- 수정: `PUT /api/pets/:petId`
+- 삭제(비활성화): `DELETE /api/pets/:petId`
+
+3. 행동 분석 (영상)
+-------------------
+
+3.1 분석 요청 생성
+------------------
+- 메서드: `POST`
+- URL: `/api/behavior-analysis`
+- 인증: 필요
+- Content-Type: `multipart/form-data`
+- Form 필드:
+  - `pet_id` (string, required)
+  - `video` (file, optional): 동영상 파일
+
+예시 응답:
+```json
+{
+  "success": true,
+  "data": {
+    "analysis_id": 1,
+    "pet_id": 1,
+    "user_id": 1,
+    "video_path": "behavior/1700000000000-xxx.mp4",
+    "analysis_status": "processing",
+    "created_at": "2026-02-05T00:00:00.000Z"
+  }
+}
+```
+
+3.2 내 행동 분석 목록/상세
+-------------------------
+- 목록: `GET /api/behavior-analysis?pet_id=&limit=&offset=`
+- 상세: `GET /api/behavior-analysis/:analysisId`
+
+3.3 AI 결과 수신 (웹훅)
+-----------------------
+- 메서드: `PUT`
+- URL: `/api/behavior-analysis/:analysisId/result`
+- 인증:
+  - 서버 간 통신 용도, 클라이언트 사용 X
+  - `.env`에 `AI_WEBHOOK_SECRET` 설정 시 헤더 필요:
+    - `X-AI-Webhook-Secret: <SECRET>`
+- Body (JSON, 일부만 보내도 됨):
+  - `analysis_status`, `detected_behaviors`, `abnormal_behaviors`,
+    `behavior_frequency`, `posture_data`, `movement_range`,
+    `model_version`, `processing_time`
+
+4. 울음소리 분석
+----------------
+
+4.1 분석 요청 생성
+------------------
+- 메서드: `POST`
+- URL: `/api/sound-analysis`
+- 인증: 필요
+- Content-Type: `multipart/form-data`
+- Form 필드:
+  - `pet_id` (string, required)
+  - `audio` (file, optional)
+
+4.2 목록/상세
+-------------
+- 목록: `GET /api/sound-analysis?pet_id=&limit=&offset=`
+- 상세: `GET /api/sound-analysis/:analysisId`
+
+4.3 AI 결과 수신
+----------------
+- 메서드: `PUT`
+- URL: `/api/sound-analysis/:analysisId/result`
+- 인증: `X-AI-Webhook-Secret` (선택, 위와 동일)
+
+5. 건강 체크
+------------
+
+5.1 건강 체크 생성
+------------------
+- 메서드: `POST`
+- URL: `/api/health-check`
+- 인증: 필요
+- Body:
+  - `pet_id` (required)
+  - `symptoms` (JSON 또는 객체)
+  - `behavior_analysis_id` (optional)
+  - `sound_analysis_id` (optional)
+
+5.2 목록/상세
+-------------
+- 목록: `GET /api/health-check?pet_id=&limit=&offset=`
+- 상세: `GET /api/health-check/:checkId`
+
+5.3 AI 결과 수신
+----------------
+- 메서드: `PUT`
+- URL: `/api/health-check/:checkId/result`
+- Body:
+  - `predicted_diseases`, `urgency_level`, `recommendations`,
+    `should_visit_hospital`, `health_score`
+
+6. 음식 안전성 분석
+-------------------
+
+6.1 분석 요청 생성
+------------------
+- 메서드: `POST`
+- URL: `/api/food-safety`
+- 인증: 필요
+- Content-Type: `multipart/form-data`
+- Form 필드:
+  - `food_name` (string, required)
+  - `pet_id` (optional)
+  - `image` (file, optional)
+
+6.2 목록/상세
+-------------
+- 목록: `GET /api/food-safety?limit=&offset=`
+- 상세: `GET /api/food-safety/:analysisId`
+
+6.3 AI 결과 수신
+----------------
+- 메서드: `PUT`
+- URL: `/api/food-safety/:analysisId/result`
+
+7. 병원 / 가격 비교
+-------------------
+
+- 병원 검색: `GET /api/hospitals/search?lat=&lng=&radius_km=&name=`
+- 진료/질병별 예상 비용: `GET /api/hospitals/prices?treatment_type=&species=&hospital_id=`
+- 병원 상세: `GET /api/hospitals/:hospitalId`
+- 병원 리뷰 목록: `GET /api/hospitals/:hospitalId/reviews?limit=&offset=`
+- 병원 리뷰 작성: `POST /api/hospitals/:hospitalId/reviews` (인증 필요)
+- 즐겨찾기 추가/삭제/목록:
+  - `POST /api/hospitals/:hospitalId/favorites`
+  - `DELETE /api/hospitals/:hospitalId/favorites`
+  - `GET /api/hospitals/favorites`
+
+8. 커뮤니티 / 댓글 / 좋아요 / 북마크
+-----------------------------------
+
+8.1 게시글
+----------
+- 목록: `GET /api/community?category=&hashtag=&q=&best=&limit=&offset=`
+- 베스트: `GET /api/community/best?limit=`
+- 작성: `POST /api/community` (인증 필요)
+- 상세: `GET /api/community/:communityId`
+- 수정: `PUT /api/community/:communityId` (작성자)
+- 삭제: `DELETE /api/community/:communityId` (작성자, 소프트 삭제)
+
+8.2 댓글
+--------
+- 목록: `GET /api/community/:communityId/comments`
+- 작성: `POST /api/community/:communityId/comments` (인증 필요)
+- 수정: `PUT /api/community/:communityId/comments/:commentId` (작성자)
+- 삭제: `DELETE /api/community/:communityId/comments/:commentId` (작성자, 소프트 삭제)
+
+8.3 좋아요
+----------
+- 게시글 좋아요 토글:
+  - `POST /api/likes/community/:communityId` (인증 필요)
+- 댓글 좋아요 토글:
+  - `POST /api/likes/comment/:commentId` (인증 필요)
+
+8.4 북마크(스크랩)
+------------------
+- 내 북마크 목록: `GET /api/bookmarks` (인증 필요)
+- 게시글 북마크 토글: `POST /api/bookmarks/:communityId` (인증 필요)
+
+9. 건강 리포트
+--------------
+
+- 생성: `POST /api/health-reports` (인증 필요)
+- 목록: `GET /api/health-reports?pet_id=&limit=&offset=`
+- 상세: `GET /api/health-reports/:reportId`
+
+10. 알림
+--------
+
+- 내 알림 목록:
+  - `GET /api/notifications?unread=1|0&limit=&offset=`
+- 알림 단건 읽음 처리:
+  - `PUT /api/notifications/:notificationId/read`
+- 전체 읽음 처리:
+  - `PUT /api/notifications/read-all`
+

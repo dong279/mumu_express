@@ -1,0 +1,16 @@
+{
+  "dependencies": {
+    "bcrypt": "^6.0.0",
+    "compression": "^1.8.1",
+    "csv-parser": "^3.2.0",
+    "dotenv": "^17.2.4",
+    "express": "^5.2.1",
+    "express-rate-limit": "^8.2.1",
+    "helmet": "^8.1.0",
+    "iconv-lite": "^0.7.2",
+    "jsonwebtoken": "^9.0.3",
+    "multer": "^2.0.2",
+    "mysql2": "^3.16.2",
+    "proj4": "^2.20.2"
+  }
+}
