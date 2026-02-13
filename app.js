@@ -6,6 +6,7 @@ const helmet = require('helmet');
 const rateLimit = require('express-rate-limit');
 const compression = require('compression');
 const db = require('./config/db');
+const { swaggerUi, swaggerSpec } = require('./swagger');
 
 const isProduction = process.env.NODE_ENV === 'production';
 
@@ -22,6 +23,9 @@ app.use(express.json({ limit: '1mb' }));
 app.use(express.urlencoded({ extended: true, limit: '1mb' }));
 
 app.use('/uploads', express.static(path.join(__dirname, 'uploads')));
+
+// Swagger UI
+app.use('/api-docs', swaggerUi.serve, swaggerUi.setup(swaggerSpec));
 
 const apiLimiter = rateLimit({
   windowMs: 1 * 60 * 1000,

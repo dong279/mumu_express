@@ -285,3 +285,37 @@ exports.getBlockedList = async (req, res) => {
     res.status(500).json({ success: false, error: '서버 오류가 발생했습니다.' });
   }
 };
+
+/** 회원 탈퇴 */
+exports.deleteAccount = async (req, res) => {
+  try {
+    const userId = req.user.userId;
+    const { password, delete_reason } = req.body;
+
+    if (!password) {
+      return res.status(400).json({ success: false, error: '비밀번호를 입력해주세요.' });
+    }
+
+    // 비밀번호 확인
+    const [users] = await db.query('SELECT password FROM users WHERE user_id = ?', [userId]);
+    if (users.length === 0) {
+      return res.status(404).json({ success: false, error: '사용자를 찾을 수 없습니다.' });
+    }
+
+    const valid = await bcrypt.compare(password, users[0].password);
+    if (!valid) {
+      return res.status(401).json({ success: false, error: '비밀번호가 올바르지 않습니다.' });
+    }
+
+    // 탈퇴 처리
+    await db.query(
+      'UPDATE users SET deleted_at = NOW(), delete_reason = ?, status = ? WHERE user_id = ?',
+      [delete_reason || null, 'inactive', userId]
+    );
+
+    res.json({ success: true, message: '회원 탈퇴가 완료되었습니다.' });
+  } catch (error) {
+    console.error('deleteAccount:', error);
+    res.status(500).json({ success: false, error: '서버 오류가 발생했습니다.' });
+  }
+};

@@ -13,5 +13,6 @@ router.put('/profile', authenticateToken, userController.updateProfile);
 router.post('/:userId/block', authenticateToken, userController.blockUser);
 router.delete('/:userId/block', authenticateToken, userController.unblockUser);
 router.get('/blocked', authenticateToken, userController.getBlockedList);
+router.delete('/account', authenticateToken, userController.deleteAccount);
 
 module.exports = router;

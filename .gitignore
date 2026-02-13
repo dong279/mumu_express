@@ -4,3 +4,5 @@ uploads/
 *.db
 *.sql
 auth.json
+swagger/
+swagger.js
