@@ -21,7 +21,6 @@ app.use(helmet({ contentSecurityPolicy: false }));
 app.use(compression());
 app.use(express.json({ limit: '1mb' }));
 app.use(express.urlencoded({ extended: true, limit: '1mb' }));
-
 app.use('/uploads', express.static(path.join(__dirname, 'uploads')));
 
 // Swagger UI
@@ -60,6 +59,10 @@ app.use('/api/follows', require('./routes/follows.routes'));
 app.use('/api/health-reports', require('./routes/healthReports.routes'));
 app.use('/api/notifications', require('./routes/notifications.routes'));
 app.use('/api/reports', require('./routes/reports.routes'));
+app.use('/api/map', require('./routes/map.routes'));
+app.use('/api/auth', require('./routes/auth.routes'));
+app.use('/api/phone', require('./routes/phone.routes'));
+app.use('/api/fcm', require('./routes/fcm.routes'));
 
 app.get('/api/test-db', async (req, res) => {
   try {
@@ -71,9 +74,8 @@ app.get('/api/test-db', async (req, res) => {
 });
 
 app.use((err, req, res, next) => {
-  if (err.code === 'LIMIT_FILE_SIZE') {
+  if (err.code === 'LIMIT_FILE_SIZE')
     return res.status(400).json({ success: false, error: '파일 크기 제한을 초과했습니다.' });
-  }
   console.error(err);
   const message = isProduction ? '서버 오류가 발생했습니다.' : (err.message || '서버 오류가 발생했습니다.');
   res.status(500).json({ success: false, error: message });
